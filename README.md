@@ -6,7 +6,7 @@ A proof-of-concept the will suggest Dutch words depending on character input for
 
 This progam will suggest Dutch words depending on input (see the letters `LAH` in screenie). 
 The suggestions are shown in the list below (e.g. `HALLO`) with the length of the words and their Wordfeud points.
-Together with the 'extra value' (see the letters 'LO'), the possibilities of matching are:
+Together with the 'extra value' (see the letters `LO`), the possibilities of matching are:
 * Starting with
 * Ending with
 * Containing
