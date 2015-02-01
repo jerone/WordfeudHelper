@@ -1,8 +1,8 @@
-﻿using System;
+﻿using HelperFramework.DataType;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using HelperFramework.DataType;
 
 namespace WordfeudHelper.Business
 {
@@ -41,6 +41,95 @@ namespace WordfeudHelper.Business
 			return String.Format("(?<{0}>{1})", BLANK_TILE_MATCH, Regex.Escape(match).Replace(@"\*", @"."));
 		}
 
+		private static Boolean IsMatch(String type, String letters, String extra, Word word)
+		{
+			// Suggested words should never be smaller then extra value, 
+			//  and not equal or smaller when letters are being used;
+			if (word.Value.Length < extra.Length || (letters.Length > 0 && word.Value.Length <= extra.Length))
+			{
+				return false;
+			}
+
+			Boolean success = true;
+			Int32 startIndex = 0;
+
+			if (ContainsBlankTileAsterisk(extra))
+			{
+				String regex;
+				switch (type)
+				{
+					case "<":  // Starts with;
+						{
+							regex = String.Format("^{0}.*", ConvertBlankTileAsterisk(extra));
+							break;
+						}
+					case ">":  // Ends with;
+						{
+							regex = String.Format(".*{0}$", ConvertBlankTileAsterisk(extra));
+							break;
+						}
+					case "<>":  // Contains;
+					default:
+						{
+							regex = String.Format(".*{0}.*", ConvertBlankTileAsterisk(extra));
+							break;
+						}
+					case "=":  // Equals;
+						{
+							regex = String.Format("^{0}$", ConvertBlankTileAsterisk(extra));
+							break;
+						}
+				}
+				Match match = Regex.Match(word.Value, regex, RegexOptions.IgnoreCase);
+				success = match.Success;
+				if (success && letters.Length > 0)
+				{
+					Group group = match.Groups[BLANK_TILE_MATCH];
+					extra = group.Value;
+					startIndex = group.Index;
+				}
+			}
+			else
+			{
+				switch (type)
+				{
+					case "<":  // Starts with;
+						{
+							success = word.Value.StartsWith(extra);
+							break;
+						}
+					case ">":  // Ends with;
+						{
+							success = word.Value.EndsWith(extra);
+							break;
+						}
+					case "<>":  // Contains;
+					default:
+						{
+							success = word.Value.Contains(extra);
+							break;
+						}
+					case "=":  // Equals;
+						{
+							success = word.Value.Equals(extra);
+							break;
+						}
+				}
+				startIndex = 0;
+			}
+
+			if (success && letters.Length > 0)
+			{
+				//for (Int32 i = startIndex; i < __extra.Length + startIndex; i++)
+				//{
+				//	__word.Matches.Add(i, __word.Value[i]);
+				//}
+				success = Suggest.MatchItem(letters + extra, null, word);
+			}
+
+			return success;
+		}
+
 		#endregion Private Methods;
 
 		#region public static SearchType StartsWith;
@@ -59,41 +148,13 @@ namespace WordfeudHelper.Business
 			MatchItem =
 				(__letters, __extra, __word) =>
 				{
-					Boolean success;
-					Int32 startIndex = 0;
-
-					if (ContainsBlankTileAsterisk(__extra))
+					// Extra value should always contain a value;
+					if (__extra.Length == 0)
 					{
-						Match match = Regex.Match(__word.Value,
-										String.Format("^{0}.*", ConvertBlankTileAsterisk(__extra)),
-										RegexOptions.IgnoreCase);
-						success = match.Success;
-						if (success && __letters.Length > 0)
-						{
-							Group group = match.Groups[BLANK_TILE_MATCH];
-							__extra = group.Value;
-							startIndex = group.Index;
-						}
-					}
-					else
-					{
-						success = __word.Value.StartsWith(__extra);
-						startIndex = 0;
+						return false;
 					}
 
-					if (success && __letters.Length > 0)
-					{
-						for (Int32 i = startIndex; i < __extra.Length + startIndex; i++)
-						{
-							__word.Matches.Add(i, __word.Value[i]);
-						}
-						//String word = __word.Value;
-						//__word.Value = __word.Value.Substring(__extra.Length);
-						success = Suggest.MatchItem(__letters, __extra, __word);
-						//__word.Value = word;
-					}
-
-					return success;
+					return IsMatch("<", __letters, __extra, __word);
 				}
 		};
 
@@ -115,30 +176,13 @@ namespace WordfeudHelper.Business
 			MatchItem =
 				(__letters, __extra, __word) =>
 				{
-					Boolean success;
-
-					if (ContainsBlankTileAsterisk(__extra))
+					// Extra value should always contain a value;
+					if (__extra.Length == 0)
 					{
-						Match match = Regex.Match(__word.Value, String.Format(".*{0}$", ConvertBlankTileAsterisk(__extra)),
-										RegexOptions.IgnoreCase);
-						success = match.Success;
-						if (success && __letters.Length > 0)
-						{
-							__extra = match.Groups[BLANK_TILE_MATCH].Value;
-						}
-					}
-					else
-					{
-						success = __word.Value.EndsWith(__extra);
+						return false;
 					}
 
-					if (success && __letters.Length > 0)
-					{
-						String word = __word.Value.Remove(__extra);
-						success = Suggest.MatchItem(__letters, String.Empty, new Word(word));
-					}
-
-					return success;
+					return IsMatch(">", __letters, __extra, __word);
 				}
 		};
 
@@ -158,33 +202,7 @@ namespace WordfeudHelper.Business
 				(__letters, __extra, __list) =>
 					__list.Where(__word => Contains.MatchItem(__letters, __extra, __word)).ToList(),
 			MatchItem =
-				(__letters, __extra, __word) =>
-				{
-					Boolean success;
-
-					if (ContainsBlankTileAsterisk(__extra))
-					{
-						Match match = Regex.Match(__word.Value, String.Format(".*{0}.*", ConvertBlankTileAsterisk(__extra)),
-										RegexOptions.IgnoreCase);
-						success = match.Success;
-						if (success && __letters.Length > 0)
-						{
-							__extra = match.Groups[BLANK_TILE_MATCH].Value;
-						}
-					}
-					else
-					{
-						success = __word.Value.Contains(__extra);
-					}
-
-					if (success && __letters.Length > 0)
-					{
-						String word = __word.Value.Remove(__extra);
-						success = Suggest.MatchItem(__letters, String.Empty, new Word(word));
-					}
-
-					return success;
-				}
+				(__letters, __extra, __word) => IsMatch("<>", __letters, __extra, __word)
 		};
 
 		#endregion public static SearchType Contains;
@@ -205,30 +223,7 @@ namespace WordfeudHelper.Business
 			MatchItem =
 				(__letters, __extra, __word) =>
 				{
-					Boolean success;
-
-					if (ContainsBlankTileAsterisk(__extra))
-					{
-						Match match = Regex.Match(__word.Value, String.Format("^{0}$", ConvertBlankTileAsterisk(__extra)),
-										RegexOptions.IgnoreCase);
-						success = match.Success;
-						if (success && __letters.Length > 0)
-						{
-							__extra = match.Groups[BLANK_TILE_MATCH].Value;
-						}
-					}
-					else
-					{
-						success = __word.Value.Equals(__extra);
-					}
-
-					if (success && __letters.Length > 0)
-					{
-						String word = __word.Value.Remove(__extra);
-						success = Suggest.MatchItem(__letters, String.Empty, new Word(word));
-					}
-
-					return success;
+					return IsMatch("=", __letters, __extra, __word);
 				}
 		};
 
@@ -262,21 +257,22 @@ namespace WordfeudHelper.Business
 		{
 			Name = "Suggestie",
 			UseLetters = true,
-			UseExtra = true,
+			UseExtra = false,
 			MatchList =
 				(__letters, __extra, __list) =>
-					__list.Where(__word => __word.Value.Length <= __letters.Length)  // Same length only;
+					__list.Where(__word => __word.Value.Length <= __letters.Length)  // Same length or longer only;
 						  .Where(__word => Suggest.MatchItem(__letters, __extra, __word)).ToList(),
 			MatchItem =
-				(__letters, __extra, __word) =>  // __extra in this case will be removed from the word's value;
+				(__letters, __extra, __word) =>
 				{
-					String search = __letters;
+					String searchLetters = __letters;
 					foreach (Char wordLetter in __word.Value)
 					{
 						Char letter = wordLetter;
-						if (!search.Contains(letter))
+						if (!searchLetters.Contains(letter))
 						{
-							if (search.Contains("*"))
+							// Need to check everytime, because there could be more then one `*`;
+							if (searchLetters.Contains("*"))
 							{
 								letter = '*';
 							}
@@ -287,9 +283,9 @@ namespace WordfeudHelper.Business
 						}
 
 						// Remove this letter from search letters, 
-						// so it's only matched once when it contains one of this letter.
-						// e.g.: search 'pa' shouldn't match 'aap'.
-						search = search.Remove(search.IndexOf(letter), 1);
+						//  so it's only matched once when it contains one of this letter.
+						//  e.g.: search 'pa' shouldn't match 'aap'.
+						searchLetters = searchLetters.Remove(searchLetters.IndexOf(letter), 1);
 					}
 					return true;
 				}
