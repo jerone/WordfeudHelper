@@ -7,7 +7,6 @@ namespace WordfeudHelper.Business
 {
 	public class Word
 	{
-
 		public String Value { get; set; }
 
 		public Int32 Points { get { return CalculateWordPoints(Value); } }
@@ -23,7 +22,8 @@ namespace WordfeudHelper.Business
 
 		private static Int32 CalculateWordPoints(String word)
 		{
-			return word.ToUpper().Sum(__letter => Letter.Get(__letter.ToString(CultureInfo.InvariantCulture), typeof(Letter.Dutch)).Points);
+			return word.ToUpper().Sum(__letter =>
+				Letter.Get(__letter.ToString(CultureInfo.InvariantCulture), typeof(Letter.Dutch)).Points);
 		}
 	}
 }

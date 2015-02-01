@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HelperFramework.DataType;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -6,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
-using HelperFramework.DataType;
 using WordfeudHelper.Business;
 
 namespace WordfeudHelper.View
@@ -16,7 +16,7 @@ namespace WordfeudHelper.View
 		private static readonly List<Word> WordsOriginal = new List<Word>();
 
 		private delegate void EnableButtonCallback(Boolean enable);
-		private delegate void FillGridCallback(List<Word> words);
+		private delegate void FillGridCallback(IEnumerable<Word> words);
 
 		public WordfeudHelperForm()
 		{
@@ -24,10 +24,10 @@ namespace WordfeudHelper.View
 
 			ReadLines();
 
-			SearchTypesComboBox.ValueMember = "";
+			SearchTypesComboBox.ValueMember = String.Empty;
 			SearchTypesComboBox.DisplayMember = "Name";
 			SearchTypesComboBox.DataSource = SearchType.Get();
-			SearchTypesComboBox.SelectedItem = SearchType.StartsWith;
+			SearchTypesComboBox.SelectedItem = SearchType.Contains;
 		}
 
 		#region Events;
@@ -92,8 +92,8 @@ namespace WordfeudHelper.View
 							Dictionary<Int32, Char> matches = word.Matches;
 							if (matches.Count > 0)
 							{
-								List<String> values =
-									value.ToCharArray().Select(__char => __char.ToString(CultureInfo.InvariantCulture)).ToList();
+								List<String> values = value.ToCharArray().Select(__char =>
+									__char.ToString(CultureInfo.InvariantCulture)).ToList();
 								foreach (Int32 letterIndex in matches.Keys)
 								{
 									values[letterIndex] = String.Format(@"\ul {0} \ul0", values[letterIndex]);
@@ -114,18 +114,18 @@ namespace WordfeudHelper.View
 			}
 		}
 
-		private void ToolStripMenuItem2Click(object sender, EventArgs e)
+		private void ToolStripMenuItem2Click(Object sender, EventArgs e)
 		{
 			Application.Exit();
 		}
 
-		private void ToolStripMenuItem4Click(object sender, EventArgs e)
+		private void ToolStripMenuItem4Click(Object sender, EventArgs e)
 		{
 			new AboutBox().ShowDialog();
 		}
 
 		private HelpForm _helpForm;
-		private void ToolStripMenuItem3Click(object sender, EventArgs e)
+		private void ToolStripMenuItem3Click(Object sender, EventArgs e)
 		{
 			if (_helpForm == null || _helpForm.IsDisposed)
 			{
@@ -152,15 +152,23 @@ namespace WordfeudHelper.View
 
 				ButtonStatus(false);
 
-				List<String> lijst = File.ReadLines("Data/OpenTaal-210G-basis-gekeurd.txt").ToList();
-				foreach (String word in lijst.Where(__word => __word.Length >= 2 && __word.Length <= 15 && !__word.Contains(" ")))
+				IEnumerable<String> allWords = File.ReadLines("Data/OpenTaal-210G-basis-gekeurd.txt");
+				IEnumerable<String> validWords = allWords.Where(__word =>
 				{
-					WordsOriginal.Add(new Word(word.ToUpper()));
+					return __word.Length >= 2
+						&& __word.Length <= 15
+						&& !__word.Contains(" ");
+				});
+				foreach (String word in validWords.Select(__word => __word.ToUpper()).Distinct())
+				{
+					WordsOriginal.Add(new Word(word));
 				}
 
 				ButtonStatus(true);
 
-				toolStripStatusLabel1.Text = String.Format("{0} words; {1} valid.", lijst.Count, WordsOriginal.Count);
+				toolStripStatusLabel1.Text = String.Format("{0} words; {1} valid.",
+															allWords.Count(),
+															WordsOriginal.Count);
 
 				UseWaitCursor = false;
 				Cursor.Position = Cursor.Position;
@@ -178,8 +186,10 @@ namespace WordfeudHelper.View
 
 				FillGrid(null);  // Empty datagrid;
 
-				List<Word> wordsFiltered = searchType.MatchList(searchValue1.ToUpper(), searchValue2.ToUpper(), WordsOriginal.ToList());
-				wordsFiltered = wordsFiltered.OrderByDescending(__word => __word.Points).ToList();
+				IEnumerable<Word> wordsFiltered = searchType.MatchList(searchValue1.ToUpper(),
+																	   searchValue2.ToUpper(),
+																	   WordsOriginal.ToList());
+				wordsFiltered = wordsFiltered.OrderByDescending(__word => __word.Points);
 
 				FillGrid(wordsFiltered);  // Fill datagrid;
 
@@ -203,7 +213,7 @@ namespace WordfeudHelper.View
 			}
 		}
 
-		private void FillGrid(List<Word> words)
+		private void FillGrid(IEnumerable<Word> words)
 		{
 			if (WordsDataGridView.InvokeRequired)
 			{
