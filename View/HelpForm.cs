@@ -1,10 +1,10 @@
 ﻿
 namespace WordfeudHelper.View
 {
+	using HelperFramework.DataType;
 	using System;
 	using System.Linq;
 	using System.Windows.Forms;
-	using HelperFramework.DataType;
 	using WordfeudHelper.Business;
 
 	public partial class HelpForm : Form
@@ -15,7 +15,7 @@ namespace WordfeudHelper.View
 		{
 			InitializeComponent();
 
-			dataGridView1.DataSource = Letter.Get(typeof(Letter.Dutch));
+			dataGridView1.DataSource = new SortableBindingList<Letter>(Letter.Get(typeof(Letter.Dutch)));
 			Int32 columnWidth = (dataGridView1.Width - SystemInformation.BorderSize.Width * 2
 								- SystemInformation.VerticalScrollBarWidth)
 								/ dataGridView1.Columns.GetColumnCount(DataGridViewElementStates.Visible);
