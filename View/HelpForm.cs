@@ -16,12 +16,14 @@ namespace WordfeudHelper.View
 			InitializeComponent();
 
 			dataGridView1.DataSource = new SortableBindingList<Letter>(Letter.Get(typeof(Letter.Dutch)));
-			Int32 columnWidth = (dataGridView1.Width - SystemInformation.BorderSize.Width * 2
-								- SystemInformation.VerticalScrollBarWidth)
-								/ dataGridView1.Columns.GetColumnCount(DataGridViewElementStates.Visible);
-			dataGridView1.Columns.Cast<DataGridViewColumn>().Each(__column => __column.Width = columnWidth);
+			dataGridView1.Columns.Cast<DataGridViewColumn>().Each(__column =>
+			{
+				// Make columns divide evenly;
+				__column.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+			});
 		}
 
+		// Only one HelpForm open;
 		public new void Show()
 		{
 			if (_isShown)
