@@ -159,7 +159,18 @@ namespace WordfeudHelper.View
 						&& __word.Length <= 15
 						&& !__word.Contains(" ");
 				});
-				foreach (String word in validWords.Select(__word => __word.ToUpper()).Distinct())
+				validWords = validWords.Select(__word =>
+				{
+					return __word.ToUpper().Replace('É', 'e')
+										   .Replace('È', 'e')
+										   .Replace('Ë', 'e')
+										   .Replace('Ï', 'i')
+										   .Replace('Ä', 'a')
+										   .Replace('Ö', 'o')
+										   .Replace('Ü', 'u')
+										   .Replace('Û', 'u');
+				}).Distinct();
+				foreach (String word in validWords)
 				{
 					WordsOriginal.Add(new Word(word));
 				}
