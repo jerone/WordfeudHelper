@@ -243,7 +243,7 @@ namespace WordfeudHelper.Business
 				(__letters, __extra, __list) =>
 					__list.Where(__word => Regexp.MatchItem(__letters, __extra, __word)).ToList(),
 			MatchItem =
-				(__letters, __extra, __word) => Regex.IsMatch(__word.Value, __letters, RegexOptions.IgnoreCase)
+				(__letters, __extra, __word) => Regex.IsMatch(__word.Value, __extra, RegexOptions.IgnoreCase)
 		};
 
 		#endregion public static SearchType Regexp;
